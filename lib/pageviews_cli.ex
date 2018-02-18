@@ -1,10 +1,23 @@
 defmodule Pageviews.CLI do
   def main(args) do
+    validate_args(args)
+  end
+
+  def validate_args(args) do
     if length(args) != 2 do
-      raise ArgumentError, message: "expected date and hour arguments" 
+      raise ArgumentError, message: "expected date and hour arguments"
     end
-    { :ok, date } = Date.from_iso8601(args[0])
-    { :ok, hour } = Integer.parse(args[1])
-    Pageviews.process_top_pages(date, hour) 
+
+    {:ok, date} =
+      args
+      |> Enum.at(0)
+      |> Date.from_iso8601()
+
+    {hour, _} =
+      args
+      |> Enum.at(1)
+      |> Integer.parse()
+
+    Pageviews.process_top_pages(date, hour)
   end
 end
