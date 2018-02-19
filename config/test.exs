@@ -1,0 +1,1 @@
+config :pageviews, :client, MockClient

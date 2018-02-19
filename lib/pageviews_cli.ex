@@ -4,7 +4,7 @@ defmodule Pageviews.CLI do
   end
 
   def validate_args(args) do
-    if length(args) != 2 do
+    unless length(args) == 2 do
       raise ArgumentError, message: "expected date and hour arguments"
     end
 
