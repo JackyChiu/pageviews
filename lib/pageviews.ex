@@ -1,9 +1,13 @@
 defmodule Pageviews do
   @base_url "https://dumps.wikimedia.org/other/pagecounts-all-sites"
 
+  """
+  Pageviews.process_top_pages(~D[2015-01-01], 4)
+  """
+
   def process_top_pages(date, hour) do
     request_file(date, hour)
-    stream_request
+    stream_request()
   end
 
   def process_pageview_stream(stream) do
@@ -17,7 +21,7 @@ defmodule Pageviews do
     padded_date = split_date_with_pad(date)
     [year, month, day, hour] = padded_date ++ [pad_intger(hour)]
 
-    file_path = build_file_url(year, month, day, hour)
+    file_path = file_path(year, month, day, hour)
 
     {:ok, res} = HTTPoison.get(@base_url <> file_path, [], stream_to: self())
     res
@@ -41,27 +45,11 @@ defmodule Pageviews do
         process_pageview_stream(data)
 
       _ ->
-        stream_request
+        stream_request()
     end
   end
 
-  # defp handle_async_response(%HTTPoison.AsyncStatus{code: 200}), do: stream_request()
-
-  # defp handle_async_response(%HTTPoison.AsyncStatus{code: code}) do
-  #  IO.puts("REQ ERROR #{code}")
-  # end
-
-  # defp handle_async_response_chunk(%HTTPoison.AsyncHeaders{headers: headers}), do: stream_request()
-
-  # defp handle_async_response(%HTTPoison.AsyncChunk{chunk: data}) do
-  #  process_pageview_stream(data)
-  # end
-
-  # defp handle_async_response_chunk(%HTTPoison.AsyncEnd{}) do
-  #  IO.puts("REQ END")
-  # end
-
-  defp build_file_url(year, month, day, hour) do
+  defp file_path(year, month, day, hour) do
     "/#{year}/#{year}-#{month}/pagecounts-#{year}#{month}#{day}-#{hour}0000.gz"
   end
 

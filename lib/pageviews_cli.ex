@@ -1,6 +1,11 @@
 defmodule Pageviews.CLI do
   def main(args) do
-    validate_args(args)
+    try do
+      {date, hour} = validate_args(args)
+      Pageviews.process_top_pages(date, hour)
+    rescue
+      e in ArgumentError -> e
+    end
   end
 
   def validate_args(args) do
@@ -18,6 +23,6 @@ defmodule Pageviews.CLI do
       |> Enum.at(1)
       |> Integer.parse()
 
-    Pageviews.process_top_pages(date, hour)
+    {date, hour}
   end
 end

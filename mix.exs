@@ -28,6 +28,9 @@ defmodule Pageviews.MixProject do
   end
 
   defp escript do
-    [main_module: Pageviews.CLI]
+    [
+      main_module: Pageviews.CLI,
+      path: "bin/pageviews"
+    ]
   end
 end
