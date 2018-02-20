@@ -1,1 +1,1 @@
-config :pageviews, :client, MockClient
+config :pageviews, :http_client, Pageviews.MockClient
