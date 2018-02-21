@@ -1,5 +1,5 @@
 defmodule Pageviews.Wiki do
-  @base_url "https://dumps.wikimedia.org/other/pagecounts-all-sites"
+  @base_url "https://dumps.wikimedia.org/other/pageviews"
 
   def request_file(year, month, day, hour) do
     path = file_path(year, month, day, hour)
@@ -41,15 +41,16 @@ defmodule Pageviews.Wiki do
       %HTTPoison.AsyncEnd{} ->
         IO.puts("REQ END")
 
-      %HTTPoison.AsyncChunk{chunk: data} ->
-        process_chunk(data)
+      %HTTPoison.AsyncChunk{chunk: chunk} ->
+        process_chunk(zstream, chunk)
+        receive_request(zstream)
 
       _ ->
-        nil
+        receive_request(zstream)
     end
   end
 
   defp file_path(year, month, day, hour) do
-    "/#{year}/#{year}-#{month}/pagecounts-#{year}#{month}#{day}-#{hour}0000.gz"
+    "/#{year}/#{year}-#{month}/pageviews-#{year}#{month}#{day}-#{hour}0000.gz"
   end
 end

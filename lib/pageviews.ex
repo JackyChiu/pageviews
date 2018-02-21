@@ -1,6 +1,6 @@
 defmodule Pageviews do
   """
-  Pageviews.process_top_pages(~D[2015-01-01], 4)
+  Pageviews.process_top_pages(~D[2018-01-01], 4)
   """
 
   def process_top_pages(date, hour) do
