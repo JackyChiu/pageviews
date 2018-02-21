@@ -22,7 +22,7 @@ defmodule Pageviews.Wiki do
   end
 
   def process_chunk(zstream, chunk) do
-    {:more, lines} = :zlib.inflateChunk(zstream, chunk)
+    {:continue, lines} = :zlib.safeInflate(zstream, chunk)
 
     lines
     |> Enum.map(&String.split(&1, "\n"))
