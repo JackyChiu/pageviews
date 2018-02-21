@@ -3,37 +3,33 @@ defmodule Pageviews.Wiki do
 
   def request_file(year, month, day, hour) do
     path = file_path(year, month, day, hour)
-    {:ok, _} = HTTPoison.get(@base_url <> path, [], stream_to: self())
-    receive_request()
+    HTTPoison.get!(@base_url <> path, [], stream_to: self())
+
+    zstream = :zlib.open()
+    :zlib.inflateInit(zstream, 31)
+
+    receive_request(zstream)
+
+    :zlib.inflateEnd(zstream)
+    :zlib.close(zstream)
   end
 
-  def receive_request() do
+  def receive_request(zstream) do
     receive do
       res ->
-        handle_async_response(res)
-        receive_request()
+        handle_async_response(zstream, res)
     end
   end
 
-  def process_chunk(chunk) do
-    zip = :zlib.open()
-    :zlib.inflateInit(zip, 31)
-
-    chunk
-    |> IO.inspect(label: "process chunk called:")
-
-    {_, lines} = :zlib.safeInflate(zip, chunk)
+  def process_chunk(zstream, chunk) do
+    {:more, lines} = :zlib.inflateChunk(zstream, chunk)
 
     lines
-    |> IO.inspect(label: "inflate")
-    |> String.split("\n")
+    |> Enum.map(&String.split(&1, "\n"))
     |> IO.inspect(label: "split")
-
-    :zlib.inflateEnd(zip)
-    :zlib.close(zip)
   end
 
-  defp handle_async_response(res) do
+  defp handle_async_response(zstream, res) do
     case res do
       %HTTPoison.AsyncStatus{code: code} when code != 200 ->
         IO.puts("REQ ERROR #{code}")
