@@ -4,12 +4,9 @@ defmodule Pageviews do
   """
 
   def process_top_pages(date, hour) do
-    request_file(date, hour)
-  end
-
-  def request_file(date, hour) do
     {year, month, day} = pad_date_fields(date)
     hour = pad_hour(hour)
+    IO.puts("getting file for date: #{date} hour: #{hour}")
     Pageviews.Wiki.request_file(year, month, day, hour)
   end
 

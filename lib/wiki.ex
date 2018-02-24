@@ -3,6 +3,7 @@ defmodule Pageviews.Wiki do
 
   def request_file(year, month, day, hour) do
     path = file_path(year, month, day, hour)
+    IO.puts("file path: #{path}")
     HTTPoison.get!(@base_url <> path, [], stream_to: self())
 
     zstream = :zlib.open()
@@ -16,21 +17,6 @@ defmodule Pageviews.Wiki do
 
   def receive_request(zstream) do
     receive do
-      res ->
-        handle_async_response(zstream, res)
-    end
-  end
-
-  def process_chunk(zstream, chunk) do
-    {:continue, lines} = :zlib.safeInflate(zstream, chunk)
-
-    lines
-    |> Enum.map(&String.split(&1, "\n"))
-    |> IO.inspect(label: "split")
-  end
-
-  defp handle_async_response(zstream, res) do
-    case res do
       %HTTPoison.AsyncStatus{code: code} when code != 200 ->
         IO.puts("REQ ERROR #{code}")
 
@@ -38,8 +24,19 @@ defmodule Pageviews.Wiki do
         IO.puts("REQ END")
 
       %HTTPoison.AsyncChunk{chunk: chunk} ->
-        process_chunk(zstream, chunk)
-        receive_request(zstream)
+        case :zlib.safeInflate(zstream, chunk) do
+          {:continue, lines} ->
+            lines
+            |> Enum.map(&String.split(&1, "\n"))
+            |> IO.inspect(label: "lines")
+
+            receive_request(zstream)
+
+          {:finished, lines} ->
+            lines
+            |> Enum.map(&String.split(&1, "\n"))
+            |> IO.inspect(label: "last line")
+        end
 
       _ ->
         receive_request(zstream)
