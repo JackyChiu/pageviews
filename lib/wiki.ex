@@ -24,7 +24,7 @@ defmodule Pageviews.Wiki do
         IO.puts("REQ END")
 
       %HTTPoison.AsyncChunk{chunk: chunk} ->
-        loop_inflate(zstream, :zlib.safeInflate(zstream, chunk))
+        inflate_chunk(zstream, :zlib.safeInflate(zstream, chunk))
         receive_request(zstream)
 
       _ ->
@@ -32,16 +32,16 @@ defmodule Pageviews.Wiki do
     end
   end
 
-  def loop_inflate(zstream, {:continue, lines}) do
-    handler(lines)
-    loop_inflate(zstream, :zlib.safeInflate(zstream, []))
+  def inflate_chunk(zstream, {:continue, lines}) do
+    read_lines(lines)
+    inflate_chunk(zstream, :zlib.safeInflate(zstream, []))
   end
 
-  def loop_inflate(zstream, {:finished, lines}) do
-    handler(lines)
+  def inflate_chunk(zstream, {:finished, lines}) do
+    read_lines(lines)
   end
 
-  def handler(lines) do
+  def read_lines(lines) do
     lines
     |> Enum.map(&String.split(&1, "\n"))
     |> IO.inspect(label: "lines")
