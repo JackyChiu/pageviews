@@ -24,23 +24,27 @@ defmodule Pageviews.Wiki do
         IO.puts("REQ END")
 
       %HTTPoison.AsyncChunk{chunk: chunk} ->
-        case :zlib.safeInflate(zstream, chunk) do
-          {:continue, lines} ->
-            lines
-            |> Enum.map(&String.split(&1, "\n"))
-            |> IO.inspect(label: "lines")
-
-            receive_request(zstream)
-
-          {:finished, lines} ->
-            lines
-            |> Enum.map(&String.split(&1, "\n"))
-            |> IO.inspect(label: "last line")
-        end
+        loop_inflate(zstream, :zlib.safeInflate(zstream, chunk))
+        receive_request(zstream)
 
       _ ->
         receive_request(zstream)
     end
+  end
+
+  def loop_inflate(zstream, {:continue, lines}) do
+    handler(lines)
+    loop_inflate(zstream, :zlib.safeInflate(zstream, []))
+  end
+
+  def loop_inflate(zstream, {:finished, lines}) do
+    handler(lines)
+  end
+
+  def handler(lines) do
+    lines
+    |> Enum.map(&String.split(&1, "\n"))
+    |> IO.inspect(label: "lines")
   end
 
   defp file_path(year, month, day, hour) do

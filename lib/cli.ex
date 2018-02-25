@@ -10,7 +10,7 @@ defmodule Pageviews.CLI do
 
   def parse_args([]) do
     date = Date.utc_today()
-    time = Time.utc_now() |> Time.add(-1 * 60 * 60, :second)
+    time = Time.utc_now() |> Time.add(-2 * 60 * 60, :second)
     {date, time.hour}
   end
 
