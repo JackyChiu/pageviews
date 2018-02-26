@@ -1,26 +1,41 @@
 defmodule Pageviews do
-  """
-  Pageviews.process_top_pages(~D[2018-01-01], 4)
-  """
-
   def process_top_pages(date, hour) do
-    {year, month, day} = pad_date_fields(date)
-    hour = pad_hour(hour)
-    IO.puts("getting file for date: #{date} hour: #{hour}")
-    Pageviews.Wiki.request_file(year, month, day, hour)
+    {:ok, agent_id} = Pageviews.Topviews.start()
+
+    pid =
+      spawn(fn ->
+        process_lines_loop(parent_id: self(), agent_id: agent_id)
+      end)
+
+    Pageviews.Wiki.request_file(pid, date, hour)
+    wait_for_top()
   end
 
-  defp pad_hour(num) do
-    num
-    |> Integer.to_string()
-    |> String.pad_leading(2, "0")
+  def process_lines_loop(opts) do
+    receive do
+      {:ok, lines} ->
+        process_lines(opts, lines)
+        process_lines_loop(opts)
+
+      :end ->
+        top = Pageviews.Topviews.get_top(opts[:agent_id])
+        send(opts[:parent_id], top)
+    end
   end
 
-  defp pad_date_fields(date) do
-    date
-    |> Date.to_string()
-    |> String.split("-")
-    |> Enum.to_list()
-    |> List.to_tuple()
+  def process_lines(opts, lines) do
+    lines
+    |> IO.inspect(label: "lines")
+    |> Enum.map(&String.split(&1, " "))
+    |> Enum.each(fn line ->
+      {page, views} = {Enum.at(line, 1), Enum.at(line, 2)}
+      Pageviews.Topviews.add_line(opts[:agent_id], {page, views})
+    end)
+  end
+
+  def wait_for_top() do
+    receive do
+      top -> top |> IO.inspect(label: "top")
+    end
   end
 end
