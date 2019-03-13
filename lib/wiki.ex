@@ -1,6 +1,40 @@
 defmodule Pageviews.Wiki do
   @base_url "https://dumps.wikimedia.org/other/pageviews"
 
+  def stream() do
+    date = Date.utc_today() |> Date.add(-1)
+    time = Time.utc_now()
+
+    Stream.resource(
+      fn -> start_func(date, time.hour) end,
+      &next_func(&1),
+      &close_func(&1)
+    )
+  end
+
+  def start_func(date, hour) do
+    {year, month, day} = pad_date_fields(date)
+    hour = pad_hour(hour)
+    IO.puts("getting file for date: #{date} hour: #{hour}")
+    path = file_path(year, month, day, hour)
+    IO.inspect(self(), label: "STREAMING TO")
+    HTTPoison.get!(@base_url <> path, [], stream_to: self())
+
+    zstream = :zlib.open()
+    :zlib.inflateInit(zstream, 31)
+
+    zstream
+  end
+
+  def next_func(zstream) do
+    receive_request(zstream)
+  end
+
+  def close_func(zstream) do
+    :zlib.inflateEnd(zstream)
+    :zlib.close(zstream)
+  end
+
   def request_file(processor_id, date, hour) do
     {year, month, day} = pad_date_fields(date)
     hour = pad_hour(hour)
@@ -17,36 +51,33 @@ defmodule Pageviews.Wiki do
     :zlib.close(zstream)
   end
 
-  def receive_request(opts) do
+  def receive_request(zstream) do
+    IO.inspect(self(), label: "READING FROM")
+
     receive do
       %HTTPoison.AsyncStatus{code: code} when code != 200 ->
         IO.puts("REQ ERROR #{code}")
-        send(opts[:processor_id], :end)
+        {:error}
 
       %HTTPoison.AsyncEnd{} ->
         IO.puts("REQ END")
-        send(opts[:processor_id], :end)
+        {:error}
 
       %HTTPoison.AsyncChunk{chunk: chunk} ->
-        zstream = opts[:zstream]
-        inflate_chunk(opts, :zlib.safeInflate(zstream, chunk))
-        receive_request(opts)
+        inflate_chunk(zstream, :zlib.safeInflate(zstream, chunk), [])
 
       _ ->
-        receive_request(opts)
+        receive_request(zstream)
     end
   end
 
-  def inflate_chunk(opts, {:continue, lines}) do
+  def inflate_chunk(zstream, {:continue, lines}, acc_lines) do
     lines = read_lines(lines)
-    zstream = opts[:zstream]
-    send(opts[:processor_id], {:ok, lines})
-    inflate_chunk(opts, :zlib.safeInflate(zstream, []))
+    inflate_chunk(zstream, :zlib.safeInflate(zstream, []), acc_lines ++ lines)
   end
 
-  def inflate_chunk(opts, {:finished, lines}) do
-    lines = read_lines(lines)
-    send(opts[:processor_id], {:ok, lines})
+  def inflate_chunk(zstream, {:finished, lines}, acc_lines) do
+    {acc_lines ++ read_lines(lines), zstream}
   end
 
   def read_lines(lines) do
