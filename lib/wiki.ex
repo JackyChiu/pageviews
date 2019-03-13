@@ -35,22 +35,6 @@ defmodule Pageviews.Wiki do
     :zlib.close(zstream)
   end
 
-  def request_file(processor_id, date, hour) do
-    {year, month, day} = pad_date_fields(date)
-    hour = pad_hour(hour)
-    IO.puts("getting file for date: #{date} hour: #{hour}")
-    path = file_path(year, month, day, hour)
-    HTTPoison.get!(@base_url <> path, [], stream_to: self())
-
-    zstream = :zlib.open()
-    :zlib.inflateInit(zstream, 31)
-
-    receive_request(processor_id: processor_id, zstream: zstream)
-
-    :zlib.inflateEnd(zstream)
-    :zlib.close(zstream)
-  end
-
   def receive_request(zstream) do
     IO.inspect(self(), label: "READING FROM")
 

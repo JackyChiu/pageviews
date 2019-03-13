@@ -5,8 +5,11 @@ defmodule Pageviews.FileReader do
     Pageviews.Wiki.stream()
     |> Flow.from_enumerable()
     |> Flow.map(&String.split(&1, " "))
+    # |> Flow.reject(&(length(&1) < 4))
+    # |> Flow.each(&IO.inspect/1)
     |> Flow.map(&page_view_pair/1)
     |> Flow.reject(&(&1 == nil))
+    |> Flow.partition()
     |> Flow.reduce(
       fn -> %{} end,
       &pageview_update/2
@@ -25,6 +28,6 @@ defmodule Pageviews.FileReader do
   end
 
   def pageview_update({page, views}, acc) do
-    Map.update(acc, page, 1, &(&1 + views))
+    Map.update(acc, page, views, &(&1 + views))
   end
 end
