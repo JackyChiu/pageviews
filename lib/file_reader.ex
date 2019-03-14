@@ -4,9 +4,7 @@ defmodule Pageviews.FileReader do
 
     {:ok, pid} = GenStage.start_link(Pageviews.Genstage_Wiki, :ok)
 
-    Process.sleep(1000)
-
-    Flow.from_stage(pid)
+    Flow.from_stages([pid], max_demand: 2000)
     |> Flow.map(&String.split(&1, " "))
     |> Flow.map(&page_view_pair/1)
     |> Flow.reject(&(&1 == nil))

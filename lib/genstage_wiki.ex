@@ -17,17 +17,33 @@ defmodule Pageviews.Genstage_Wiki do
     zstream = :zlib.open()
     :zlib.inflateInit(zstream, 31)
 
-    {:producer, {zstream, []}}
+    {:producer, {zstream, [], false}}
   end
 
-  def handle_demand(demand, {zstream, lines}) do
+  def handle_demand(demand, {zstream, lines, done}) do
     {ret, lines} = Enum.split(lines, demand)
-    {:noreply, ret, {zstream, lines}}
+
+    cond do
+      done and length(lines) == 0 ->
+        IO.puts("GenStage dieing #{length(lines)}")
+        {:stop, :shutdown, {zstream, lines, done}}
+
+      true ->
+        IO.puts("remaining #{length(lines)}")
+        {:noreply, ret, {zstream, lines, done}}
+    end
   end
 
-  def handle_info(%HTTPoison.AsyncChunk{chunk: chunk}, {zstream, lines}) do
+  def handle_info(%HTTPoison.AsyncChunk{chunk: chunk}, {zstream, lines, _done}) do
     {new_lines, zstream} = inflate_chunk(zstream, :zlib.safeInflate(zstream, chunk), [])
-    {:noreply, [], {zstream, lines ++ new_lines}}
+    {:noreply, [], {zstream, lines ++ new_lines, false}}
+  end
+
+  def handle_info(%HTTPoison.AsyncEnd{}, {zstream, lines, _done}) do
+    IO.puts("DONE DOWNLOADING")
+    :zlib.inflateEnd(zstream)
+    :zlib.close(zstream)
+    {:noreply, [], {zstream, lines, true}}
   end
 
   def handle_info(_, state) do
