@@ -2,11 +2,12 @@ defmodule Pageviews.FileReader do
   def run do
     IO.puts("Starting run...")
 
-    Pageviews.Wiki.stream()
-    |> Flow.from_enumerable()
+    {:ok, pid} = GenStage.start_link(Pageviews.Genstage_Wiki, :ok)
+
+    Process.sleep(1000)
+
+    Flow.from_stage(pid)
     |> Flow.map(&String.split(&1, " "))
-    # |> Flow.reject(&(length(&1) < 4))
-    # |> Flow.each(&IO.inspect/1)
     |> Flow.map(&page_view_pair/1)
     |> Flow.reject(&(&1 == nil))
     |> Flow.partition()

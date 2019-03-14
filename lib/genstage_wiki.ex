@@ -21,7 +21,6 @@ defmodule Pageviews.Genstage_Wiki do
   end
 
   def handle_demand(demand, {zstream, lines}) do
-    demand = min(demand, length(lines))
     {ret, lines} = Enum.split(lines, demand)
     {:noreply, ret, {zstream, lines}}
   end
