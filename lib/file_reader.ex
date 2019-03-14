@@ -5,17 +5,19 @@ defmodule Pageviews.FileReader do
 
     {:ok, pid} = GenStage.start_link(Pageviews.Genstage_Wiki, :ok)
 
-    Flow.from_stages([pid], max_demand: 2000)
-    |> Flow.map(&String.split(&1, empty_space))
-    |> Flow.map(&page_view_pair/1)
-    |> Flow.reject(&(&1 == nil))
-    |> Flow.partition()
-    |> Flow.reduce(
-      fn -> %{} end,
-      &pageview_update/2
-    )
-    |> Enum.to_list()
-    |> IO.inspect()
+    final_list =
+      Flow.from_stages([pid], max_demand: 2000)
+      |> Flow.map(&String.split(&1, empty_space))
+      |> Flow.map(&page_view_pair/1)
+      |> Flow.reject(&(&1 == nil))
+      |> Flow.partition()
+      |> Flow.reduce(
+        fn -> %{} end,
+        &pageview_update/2
+      )
+      |> Enum.to_list()
+
+    IO.inspect(length(final_list), label: "ENUM SIZE")
   end
 
   def page_view_pair(line) do
