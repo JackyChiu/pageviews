@@ -27,11 +27,11 @@ defmodule Pageviews.Genstage_Wiki do
     cond do
       done and length(lines) == 0 ->
         IO.puts("GenStage dieing #{length(lines)}")
-        {:stop, :shutdown, {zstream, lines, done}}
+        {:stop, :shutdown, {zstream, lines, remaining_demand, done}}
 
       true ->
         remaining_demand = remaining_demand - length(events)
-        IO.puts("EMITTING #{length(events)} events")
+        # IO.puts("EMITTING #{length(events)} events")
         {:noreply, events, {zstream, lines, remaining_demand, done}}
     end
   end
@@ -42,18 +42,28 @@ defmodule Pageviews.Genstage_Wiki do
 
     {events, lines} = Enum.split(lines, remaining_demand)
     remaining_demand = max(remaining_demand - length(events), 0)
-    IO.puts("EMITTING #{length(events)} events")
     {:noreply, events, {zstream, lines, remaining_demand, false}}
   end
 
-  def handle_info(%HTTPoison.AsyncEnd{}, {zstream, lines, _done}) do
+  def handle_info(%HTTPoison.AsyncEnd{}, {zstream, lines, remaining_demand, _done}) do
     IO.puts("DONE DOWNLOADING")
     :zlib.inflateEnd(zstream)
     :zlib.close(zstream)
-    {:noreply, [], {zstream, lines, true}}
+
+    {events, lines} = Enum.split(lines, remaining_demand)
+    remaining_demand = remaining_demand - length(events)
+
+    cond do
+      length(events) > 0 ->
+        {:noreply, events, {zstream, lines, remaining_demand, true}}
+
+      true ->
+        IO.puts("GenStage dieing #{length(lines)}")
+        {:stop, :shutdown, {zstream, lines, remaining_demand, true}}
+    end
   end
 
-  def handle_info(_, state) do
+  def handle_info(_msg, state) do
     {:noreply, [], state}
   end
 
