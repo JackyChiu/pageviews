@@ -30,13 +30,13 @@ defmodule Pageviews.Genstage_Wiki do
 
       true ->
         IO.puts("remaining #{length(lines)}")
-        {:noreply, ret, {zstream, lines, done}}
+        {:noreply, [], {zstream, lines, done}}
     end
   end
 
   def handle_info(%HTTPoison.AsyncChunk{chunk: chunk}, {zstream, lines, _done}) do
     {new_lines, zstream} = inflate_chunk(zstream, :zlib.safeInflate(zstream, chunk), [])
-    {:noreply, [], {zstream, lines ++ new_lines, false}}
+    {:noreply, new_lines, {zstream, lines ++ new_lines, false}}
   end
 
   def handle_info(%HTTPoison.AsyncEnd{}, {zstream, lines, _done}) do
