@@ -17,11 +17,11 @@ defmodule Pageviews.Genstage_Wiki do
     zstream = :zlib.open()
     :zlib.inflateInit(zstream, 31)
 
-    {:producer, {zstream, [], false}}
+    {:producer, {zstream, [], 0, false}}
   end
 
-  def handle_demand(demand, {zstream, lines, done}) do
-    {ret, lines} = Enum.split(lines, demand)
+  def handle_demand(demand, {zstream, lines, remaining_demand, done}) do
+    {events, lines} = Enum.split(lines, demand)
 
     cond do
       done and length(lines) == 0 ->
@@ -30,13 +30,18 @@ defmodule Pageviews.Genstage_Wiki do
 
       true ->
         IO.puts("remaining #{length(lines)}")
-        {:noreply, [], {zstream, lines, done}}
+        remaining_demand = max(remaining_demand - length(events), 0)
+        {:noreply, events, {zstream, lines, remaining_demand, done}}
     end
   end
 
-  def handle_info(%HTTPoison.AsyncChunk{chunk: chunk}, {zstream, lines, _done}) do
+  def handle_info(%HTTPoison.AsyncChunk{chunk: chunk}, {zstream, lines, remaining_demand, _done}) do
     {new_lines, zstream} = inflate_chunk(zstream, :zlib.safeInflate(zstream, chunk), [])
-    {:noreply, new_lines, {zstream, lines ++ new_lines, false}}
+    lines = Enum.concat(lines, new_lines)
+
+    {events, lines} = Enum.split(lines, remaining_demand)
+    remaining_demand = max(remaining_demand - length(events), 0)
+    {:noreply, events, {zstream, lines, remaining_demand, false}}
   end
 
   def handle_info(%HTTPoison.AsyncEnd{}, {zstream, lines, _done}) do

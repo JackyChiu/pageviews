@@ -24,7 +24,7 @@ defmodule Pageviews.MixProject do
   defp deps do
     [
       {:httpoison, "~> 1.0"},
-      {:flow, "~> 0.13"}
+      {:flow, "~> 0.14"}
     ]
   end
 
