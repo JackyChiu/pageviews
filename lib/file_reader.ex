@@ -1,11 +1,12 @@
 defmodule Pageviews.FileReader do
   def run do
     IO.puts("Starting run...")
+    empty_space = :binary.compile_pattern(" ")
 
     {:ok, pid} = GenStage.start_link(Pageviews.Genstage_Wiki, :ok)
 
     Flow.from_stages([pid], max_demand: 2000)
-    |> Flow.map(&String.split(&1, " "))
+    |> Flow.map(&String.split(&1, empty_space))
     |> Flow.map(&page_view_pair/1)
     |> Flow.reject(&(&1 == nil))
     |> Flow.partition()
