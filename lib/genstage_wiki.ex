@@ -21,7 +21,8 @@ defmodule Pageviews.Genstage_Wiki do
   end
 
   def handle_demand(demand, {zstream, lines, remaining_demand, done}) do
-    {events, lines} = Enum.split(lines, demand)
+    remaining_demand = remaining_demand + demand
+    {events, lines} = Enum.split(lines, remaining_demand)
 
     cond do
       done and length(lines) == 0 ->
@@ -29,8 +30,8 @@ defmodule Pageviews.Genstage_Wiki do
         {:stop, :shutdown, {zstream, lines, done}}
 
       true ->
-        IO.puts("remaining #{length(lines)}")
-        remaining_demand = max(remaining_demand - length(events), 0)
+        remaining_demand = remaining_demand - length(events)
+        IO.puts("EMITTING #{length(events)} events")
         {:noreply, events, {zstream, lines, remaining_demand, done}}
     end
   end
@@ -41,6 +42,7 @@ defmodule Pageviews.Genstage_Wiki do
 
     {events, lines} = Enum.split(lines, remaining_demand)
     remaining_demand = max(remaining_demand - length(events), 0)
+    IO.puts("EMITTING #{length(events)} events")
     {:noreply, events, {zstream, lines, remaining_demand, false}}
   end
 
