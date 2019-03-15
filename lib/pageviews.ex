@@ -1,12 +1,11 @@
 defmodule Pageviews do
   def run do
     IO.puts("Starting run...")
+
     empty_space = :binary.compile_pattern(" ")
 
-    {:ok, pid} = GenStage.start_link(Pageviews.Wiki, :ok)
-
     final_list =
-      Flow.from_stages([pid], max_demand: 100_000)
+      Flow.from_specs([Pageviews.Wiki])
       |> Flow.map(&String.split(&1, empty_space))
       |> Flow.map(&page_view_pair/1)
       |> Flow.reject(&(&1 == nil))

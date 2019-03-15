@@ -3,6 +3,10 @@ defmodule Pageviews.Wiki do
 
   @base_url "https://dumps.wikimedia.org/other/pageviews"
 
+  def start_link(_) do
+    GenStage.start_link(__MODULE__, :ok)
+  end
+
   def init(_) do
     date = Date.utc_today() |> Date.add(-1)
     time = Time.utc_now()
