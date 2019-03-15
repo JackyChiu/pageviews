@@ -2,7 +2,7 @@ defmodule Pageviews.Application do
   use Application
 
   def start(_type, _args) do
-    Pageviews.FileReader.run()
+    Pageviews.run()
     {:ok, self()}
   end
 end

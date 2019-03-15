@@ -29,7 +29,7 @@ defmodule Pageviews.Topviews do
   end
 
   def get_top(pid) do
-    Agent.get(pid, fn topviews -> topviews end)
+    Agent.get(pid, & &1)
   end
 
   defp compare(a, b) do

@@ -1,41 +1,35 @@
 defmodule Pageviews do
-  def process_top_pages(date, hour) do
-    {:ok, agent_id} = Pageviews.Topviews.start()
+  def run do
+    IO.puts("Starting run...")
+    empty_space = :binary.compile_pattern(" ")
 
-    pid =
-      spawn(fn ->
-        process_lines_loop(parent_id: self(), agent_id: agent_id)
-      end)
+    {:ok, pid} = GenStage.start_link(Pageviews.Wiki, :ok)
 
-    Pageviews.Wiki.request_file(pid, date, hour)
-    wait_for_top()
+    final_list =
+      Flow.from_stages([pid], max_demand: 100_000)
+      |> Flow.map(&String.split(&1, empty_space))
+      |> Flow.map(&page_view_pair/1)
+      |> Flow.reject(&(&1 == nil))
+      |> Flow.partition()
+      |> Flow.reduce(
+        fn -> %{} end,
+        &pageview_update/2
+      )
+      |> Enum.to_list()
+
+    IO.inspect(length(final_list), label: "ENUM SIZE")
   end
 
-  def process_lines_loop(opts) do
-    receive do
-      {:ok, lines} ->
-        process_lines(opts, lines)
-        process_lines_loop(opts)
-
-      :end ->
-        top = Pageviews.Topviews.get_top(opts[:agent_id])
-        send(opts[:parent_id], top)
+  def page_view_pair(line) do
+    with views_str when not is_nil(views_str) <- Enum.at(line, 2),
+         {views, _} <- Integer.parse(views_str) do
+      {Enum.at(line, 1), views}
+    else
+      _ -> nil
     end
   end
 
-  def process_lines(opts, lines) do
-    lines
-    |> IO.inspect(label: "lines")
-    |> Enum.map(&String.split(&1, " "))
-    |> Enum.each(fn line ->
-      {page, views} = {Enum.at(line, 1), Enum.at(line, 2)}
-      Pageviews.Topviews.add_line(opts[:agent_id], {page, views})
-    end)
-  end
-
-  def wait_for_top() do
-    receive do
-      top -> top |> IO.inspect(label: "top")
-    end
+  def pageview_update({page, views}, acc) do
+    Map.update(acc, page, views, &(&1 + views))
   end
 end
