@@ -7,24 +7,16 @@ defmodule Pageviews.Topviews do
 
   def add_line(pid, {page, views}) do
     Agent.update(pid, fn topviews ->
-      cond do
-        Enum.count(topviews) >= 25 ->
-          topviews =
-            cond do
-              Enum.at(topviews, -1)[:views] < views ->
-                topviews |> Enum.drop(-1)
+      [{_, lowest_topview} | tail] = topviews
 
-              true ->
-                topviews
-            end
+      topviews =
+        cond do
+          length(topviews) >= 25 and lowest_topview < views -> tail
+          true -> topviews
+        end
 
-          (topviews ++ [%{page: page, views: views}])
-          |> IO.inspect(label: "topviews")
-          |> Enum.sort(&compare/2)
-
-        true ->
-          topviews ++ [%{page: page, views: views}]
-      end
+      [{page, views} | topviews]
+      |> Enum.sort(&compare/2)
     end)
   end
 
@@ -32,10 +24,10 @@ defmodule Pageviews.Topviews do
     Agent.get(pid, & &1)
   end
 
-  defp compare(a, b) do
+  defp compare({a_page, a_views}, {b_page, b_views}) do
     cond do
-      a[:views] == b[:views] -> a[:page] >= b[:page]
-      true -> a[:views] > b[:views]
+      a_views == b_views -> a_page >= b_page
+      true -> a_views > b_views
     end
   end
 end

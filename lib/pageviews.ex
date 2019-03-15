@@ -3,20 +3,24 @@ defmodule Pageviews do
     IO.puts("Starting run...")
 
     empty_space = :binary.compile_pattern(" ")
+    {:ok, agent_pid} = Pageviews.Topviews.start()
 
-    final_list =
-      Flow.from_specs([Pageviews.Wiki])
-      |> Flow.map(&String.split(&1, empty_space))
-      |> Flow.map(&page_view_pair/1)
-      |> Flow.reject(&(&1 == nil))
-      |> Flow.partition()
-      |> Flow.reduce(
-        fn -> %{} end,
-        &pageview_update/2
-      )
-      |> Enum.to_list()
+    Flow.from_specs([Pageviews.Wiki], max_demand: 50_000)
+    |> Flow.map(&String.split(&1, empty_space))
+    |> Flow.map(&page_view_pair/1)
+    |> Flow.reject(&(&1 == nil))
+    |> Flow.partition()
+    |> Flow.reduce(
+      fn -> %{} end,
+      &pageview_update/2
+    )
+    |> Flow.each(fn kv_pair ->
+      Pageviews.Topviews.add_line(agent_pid, kv_pair)
+    end)
+    |> Flow.run()
 
-    IO.inspect(length(final_list), label: "ENUM SIZE")
+    IO.puts("Finished flow")
+    IO.inspect(Pageviews.Topviews.get_top(agent_pid), label: "TOP")
   end
 
   def page_view_pair(line) do
