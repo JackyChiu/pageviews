@@ -8,7 +8,8 @@ defmodule Pageviews.MixProject do
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      escript: escript()
+      escript: escript(),
+      aliases: aliases()
     ]
   end
 
@@ -32,6 +33,12 @@ defmodule Pageviews.MixProject do
     [
       main_module: Pageviews.CLI,
       path: "bin/pageviews"
+    ]
+  end
+
+  defp aliases do
+    [
+      test: "test --no-start"
     ]
   end
 end

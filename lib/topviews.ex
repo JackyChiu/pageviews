@@ -7,12 +7,13 @@ defmodule Pageviews.Topviews do
 
   def add_line(pid, {page, views}) do
     Agent.update(pid, fn topviews ->
-      [{_, lowest_topview} | tail] = topviews
-
       topviews =
-        cond do
-          length(topviews) >= 25 and lowest_topview < views -> tail
-          true -> topviews
+        with true <- length(topviews) >= 25,
+             [{_, lowest_topview} | tail] <- topviews,
+             true <- lowest_topview < views do
+          tail
+        else
+          _ -> topviews
         end
 
       [{page, views} | topviews]
