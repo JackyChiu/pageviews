@@ -29,8 +29,8 @@ defmodule Pageviews.Topviews do
 
   defp compare({a_page, a_views}, {b_page, b_views}) do
     cond do
-      a_views == b_views -> a_page >= b_page
-      true -> a_views > b_views
+      a_views == b_views -> a_page < b_page
+      true -> a_views < b_views
     end
   end
 end
