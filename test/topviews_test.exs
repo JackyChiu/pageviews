@@ -38,8 +38,9 @@ defmodule PageviewsTopviewTest do
       Topviews.add_line(pid, {"test#{i}", i})
     end)
 
+    Topviews.add_line(pid, {"retest27", 27})
+
     expected = [
-      {"test3", 3},
       {"test4", 4},
       {"test5", 5},
       {"test6", 6},
@@ -63,6 +64,7 @@ defmodule PageviewsTopviewTest do
       {"test24", 24},
       {"test25", 25},
       {"test26", 26},
+      {"retest27", 27},
       {"test27", 27}
     ]
 
