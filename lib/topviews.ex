@@ -7,17 +7,19 @@ defmodule Pageviews.Topviews do
 
   def add_line(pid, {page, views}) do
     Agent.update(pid, fn topviews ->
-      topviews =
-        with true <- length(topviews) >= 25,
-             [{_, lowest_topview} | tail] <- topviews,
-             true <- lowest_topview < views do
-          tail
+      with true <- length(topviews) >= 25,
+           [{_, lowest_topview} | tail] <- topviews do
+        if lowest_topview < views do
+          [{page, views} | tail]
+          |> Enum.sort(&compare/2)
         else
-          _ -> topviews
+          topviews
         end
-
-      [{page, views} | topviews]
-      |> Enum.sort(&compare/2)
+      else
+        _ ->
+          [{page, views} | topviews]
+          |> Enum.sort(&compare/2)
+      end
     end)
   end
 
