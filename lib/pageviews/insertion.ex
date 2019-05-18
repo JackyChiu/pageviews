@@ -5,15 +5,15 @@
 # compared to merge sort.
 defmodule Pageviews.Insertion do
   def sort(list, comparer) when is_list(list) do
-    do_sort([], list)
+    do_sort([], list, comparer)
   end
 
   defp do_sort(_sorted_list = [], _unsorted_list = [head | tail], comparer) do
-    do_sort([head], tail)
+    do_sort([head], tail, comparer)
   end
 
   defp do_sort(sorted_list, _unsorted_list = [head | tail], comparer) do
-    insert(head, sorted_list) |> do_sort(tail)
+    insert(head, sorted_list, comparer) |> do_sort(tail, comparer)
   end
 
   defp do_sort(sorted_list, _unsorted_list = [], _comparer) do
@@ -24,13 +24,13 @@ defmodule Pageviews.Insertion do
     [elem]
   end
 
-  defp insert(elem, sorted_list) do
+  defp insert(elem, sorted_list, comparer) do
     [min | rest] = sorted_list
 
     if min >= elem do
       [elem | [min | rest]]
     else
-      [min | insert(elem, rest)]
+      [min | insert(elem, rest, comparer)]
     end
   end
 end
