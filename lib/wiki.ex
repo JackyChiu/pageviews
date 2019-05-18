@@ -16,7 +16,6 @@ defmodule Pageviews.Wiki do
     hour = pad_hour(hour)
     IO.puts("getting file for date: #{date} hour: #{hour}")
     path = file_path(year, month, day, hour)
-    IO.inspect(self(), label: "STREAMING TO")
     HTTPoison.get!(@base_url <> path, [], stream_to: self())
 
     zstream = :zlib.open()

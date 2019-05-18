@@ -19,7 +19,6 @@ defmodule Pageviews do
     end)
     |> Flow.run()
 
-    IO.puts("Finished flow")
     IO.inspect(Pageviews.Topviews.get_top(agent_pid), label: "TOP")
   end
 
