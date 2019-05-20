@@ -1,6 +1,5 @@
 defmodule Pageviews.Topviews do
   use Agent
-  alias Pageviews.Insertion
 
   def start() do
     Agent.start(fn -> [] end)
@@ -12,14 +11,14 @@ defmodule Pageviews.Topviews do
            [{_, lowest_topview} | tail] <- topviews do
         if lowest_topview < views do
           [{page, views} | tail]
-          |> Insertion.sort(&compare/2)
+          |> Enum.sort(&compare/2)
         else
           topviews
         end
       else
         _ ->
           [{page, views} | topviews]
-          |> Insertion.sort(&compare/2)
+          |> Enum.sort(&compare/2)
       end
     end)
   end
