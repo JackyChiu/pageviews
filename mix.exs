@@ -25,7 +25,8 @@ defmodule Pageviews.MixProject do
   defp deps do
     [
       {:httpoison, "~> 1.0"},
-      {:flow, "~> 0.14"}
+      {:flow, "~> 0.14"},
+      {:benchee, "~> 1.0", only: :dev}
     ]
   end
 
@@ -38,7 +39,8 @@ defmodule Pageviews.MixProject do
 
   defp aliases do
     [
-      test: "test --no-start"
+      test: "test --no-start",
+      bench: "run test/bench.exs --no-start"
     ]
   end
 end
