@@ -1,7 +1,6 @@
 defmodule Pageviews.Wiki do
   use GenStage
-
-  @base_url "https://dumps.wikimedia.org/other/pageviews"
+  alias Pageviews.WikiRequest
 
   def start_link(_) do
     GenStage.start_link(__MODULE__, :ok)
@@ -9,14 +8,10 @@ defmodule Pageviews.Wiki do
 
   def init(_) do
     date = Date.utc_today() |> Date.add(-1)
-    time = Time.utc_now()
-    hour = time.hour
+    hour = Time.utc_now().hour
 
-    {year, month, day} = pad_date_fields(date)
-    hour = pad_hour(hour)
-    IO.puts("getting file for date: #{date} hour: #{hour}")
-    path = file_path(year, month, day, hour)
-    HTTPoison.get!(@base_url <> path, [], stream_to: self())
+    # Start streaming results to current procress.
+    WikiRequest.get(self(), date, hour)
 
     zstream = :zlib.open()
     :zlib.inflateInit(zstream, 31)
@@ -71,35 +66,20 @@ defmodule Pageviews.Wiki do
     {:noreply, [], state}
   end
 
-  defp inflate_chunk(zstream, {:continue, lines}, acc_lines) do
-    lines = read_lines(lines)
+  defp inflate_chunk(zstream, chunk, acc_lines \\ [])
+
+  # Inflates the chunk of data incrementally until there is no more data.
+  defp inflate_chunk(zstream, {:continue, raw_lines}, acc_lines) do
+    lines = read_lines(raw_lines)
     inflate_chunk(zstream, :zlib.safeInflate(zstream, []), acc_lines ++ lines)
   end
 
-  defp inflate_chunk(zstream, {:finished, lines}, acc_lines) do
-    {acc_lines ++ read_lines(lines), zstream}
+  defp inflate_chunk(zstream, {:finished, raw_lines}, acc_lines) do
+    {zstream, acc_lines ++ read_lines(raw_lines)}
   end
 
   defp read_lines(lines) do
     lines
     |> Enum.flat_map(&String.split(&1, "\n"))
-  end
-
-  defp pad_date_fields(date) do
-    date
-    |> Date.to_string()
-    |> String.split("-")
-    |> Enum.to_list()
-    |> List.to_tuple()
-  end
-
-  defp pad_hour(num) do
-    num
-    |> Integer.to_string()
-    |> String.pad_leading(2, "0")
-  end
-
-  defp file_path(year, month, day, hour) do
-    "/#{year}/#{year}-#{month}/pageviews-#{year}#{month}#{day}-#{hour}0000.gz"
   end
 end
