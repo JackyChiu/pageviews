@@ -9,7 +9,7 @@ defmodule Pageviews do
 
     Flow.from_specs([Pageviews.Wiki], max_demand: 50_000)
     |> Flow.map(&String.split(&1, empty_space))
-    |> Flow.map(&page_view_pair/1)
+    |> Flow.map(&pageview_pair/1)
     |> Flow.reject(&(&1 == nil))
     |> Flow.partition()
     |> Flow.reduce(
@@ -24,7 +24,7 @@ defmodule Pageviews do
     IO.inspect(Topviews.get_top(agent_pid), label: "TOP")
   end
 
-  def page_view_pair(line) do
+  def pageview_pair(line) do
     with views_str when not is_nil(views_str) <- Enum.at(line, 2),
          {views, _} <- Integer.parse(views_str) do
       {Enum.at(line, 1), views}
