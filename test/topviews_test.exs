@@ -12,15 +12,15 @@ defmodule PageviewsTopviewTest do
 
   test "add line", state do
     pid = state[:pid]
-    :ok = Topviews.add_line(pid, {"hi", 5})
+    :ok = Topviews.add_pageview(pid, {"hi", 5})
     assert([{"hi", 5}], Topviews.get_top(pid))
   end
 
   test "sort lines", state do
     pid = state[:pid]
-    Topviews.add_line(pid, {"test1", 5})
-    Topviews.add_line(pid, {"test2", 10})
-    Topviews.add_line(pid, {"test3", 3})
+    Topviews.add_pageview(pid, {"test1", 5})
+    Topviews.add_pageview(pid, {"test2", 10})
+    Topviews.add_pageview(pid, {"test3", 3})
 
     expected = [
       {"test3", 3},
@@ -31,23 +31,15 @@ defmodule PageviewsTopviewTest do
     assert(expected == Topviews.get_top(pid))
   end
 
-  test "sort lines pass 25", state do
-    pid = state[:pid]
+  test "store lines using size limit", _state do
+    {:ok, pid} = Topviews.start(15)
+    on_exit(fn -> Agent.stop(pid) end)
 
-    Enum.each(1..27, fn i ->
-      Topviews.add_line(pid, {"test#{i}", i})
+    Enum.each(1..25, fn i ->
+      Topviews.add_pageview(pid, {"test#{i}", i})
     end)
 
-    Topviews.add_line(pid, {"retest27", 27})
-
     expected = [
-      {"test4", 4},
-      {"test5", 5},
-      {"test6", 6},
-      {"test7", 7},
-      {"test8", 8},
-      {"test9", 9},
-      {"test10", 10},
       {"test11", 11},
       {"test12", 12},
       {"test13", 13},
@@ -62,12 +54,10 @@ defmodule PageviewsTopviewTest do
       {"test22", 22},
       {"test23", 23},
       {"test24", 24},
-      {"test25", 25},
-      {"test26", 26},
-      {"retest27", 27},
-      {"test27", 27}
+      {"test25", 25}
     ]
 
+    assert(length(expected) == 15)
     assert(expected == Topviews.get_top(pid))
   end
 end

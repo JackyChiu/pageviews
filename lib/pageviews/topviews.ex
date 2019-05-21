@@ -1,26 +1,27 @@
 defmodule Pageviews.Topviews do
   use Agent
 
-  def start() do
-    Agent.start(fn -> [] end)
+  def start(size_limit \\ 10) do
+    Agent.start(fn -> {size_limit, []} end)
   end
 
-  def add_line(pid, {page, views}) do
-    Agent.update(pid, fn topviews ->
-      insert({page, views}, topviews)
+  def add_pageview(pid, {page, views}) do
+    Agent.update(pid, fn {size_limit, topviews} ->
+      topviews = insert(size_limit, topviews, {page, views})
+      {size_limit, topviews}
     end)
   end
 
   def get_top(pid) do
-    Agent.get(pid, & &1)
+    Agent.get(pid, fn {_size_limit, topviews} -> topviews end)
   end
 
-  defp insert({page, views}, topviews) when length(topviews) < 25 do
+  defp insert(size_limit, topviews, {page, views}) when length(topviews) < size_limit do
     [{page, views} | topviews]
     |> Enum.sort(&compare/2)
   end
 
-  defp insert({page, views}, topviews) do
+  defp insert(_size_limit, topviews, {page, views}) do
     with [{_, lowest_view} | tail] <- topviews,
          true <- lowest_view < views do
       [{page, views} | tail]

@@ -5,7 +5,7 @@ defmodule Pageviews do
     IO.puts("Starting run...")
 
     empty_space = :binary.compile_pattern(" ")
-    {:ok, agent_pid} = Topviews.start()
+    {:ok, agent_pid} = Topviews.start(25)
 
     Flow.from_specs([Pageviews.Wiki], max_demand: 50_000)
     |> Flow.map(&String.split(&1, empty_space))
@@ -17,7 +17,7 @@ defmodule Pageviews do
       &pageview_update/2
     )
     |> Flow.each(fn kv_pair ->
-      Topviews.add_line(agent_pid, kv_pair)
+      Topviews.add_pageview(agent_pid, kv_pair)
     end)
     |> Flow.run()
 
