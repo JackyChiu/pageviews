@@ -1,6 +1,7 @@
 defmodule Pageviews.WikiRequest do
   @base_url "https://dumps.wikimedia.org/other/pageviews"
 
+  # Streams the chunks of data recieved from the request to the provided pid.
   def get(pid, date, hour) do
     {year, month, day} = pad_date_fields(date)
     hour = pad_hour(hour)

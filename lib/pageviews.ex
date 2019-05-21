@@ -25,9 +25,10 @@ defmodule Pageviews do
   end
 
   def pageview_pair(line) do
-    with views_str when not is_nil(views_str) <- Enum.at(line, 2),
+    with page when not is_nil(page) <- Enum.at(line, 1),
+         views_str when not is_nil(views_str) <- Enum.at(line, 2),
          {views, _} <- Integer.parse(views_str) do
-      {Enum.at(line, 1), views}
+      {page, views}
     else
       _ -> nil
     end
