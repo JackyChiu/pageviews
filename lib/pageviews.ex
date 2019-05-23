@@ -5,24 +5,24 @@ defmodule Pageviews do
   def run do
     Logger.info("Starting run...")
 
-    empty_space = :binary.compile_pattern(" ")
     {:ok, agent_pid} = Topviews.start(25)
 
     Flow.from_specs([Pageviews.Wiki], max_demand: 50_000)
-    |> Flow.map(&String.split(&1, empty_space))
-    |> Flow.map(&pageview_pair/1)
-    |> Flow.reject(&(&1 == nil))
+    |> create_pairs
     |> Flow.partition()
-    |> Flow.reduce(
-      fn -> %{} end,
-      &pageview_update/2
-    )
-    |> Flow.each(fn kv_pair ->
-      Topviews.add_pageview(agent_pid, kv_pair)
-    end)
+    |> accumulate_and_filter(agent_pid)
     |> Flow.run()
 
     IO.inspect(Topviews.get_top(agent_pid), label: "TOP")
+  end
+
+  def create_pairs(flow) do
+    empty_space = :binary.compile_pattern(" ")
+
+    flow
+    |> Flow.map(&String.split(&1, empty_space))
+    |> Flow.map(&pageview_pair/1)
+    |> Flow.reject(&(&1 == nil))
   end
 
   defp pageview_pair(line) do
@@ -33,6 +33,28 @@ defmodule Pageviews do
     else
       _ -> nil
     end
+  end
+
+  def accumulate_and_filter(flow, agent_pid) do
+    flow
+    |> Flow.reject(&in_blacklist/1)
+    |> Flow.reduce(
+      fn -> %{} end,
+      &pageview_update/2
+    )
+    |> Flow.each(fn kv_pair ->
+      Topviews.add_pageview(agent_pid, kv_pair)
+    end)
+  end
+
+  defp in_blacklist({page, _view}) do
+    page in [
+      "Special:CreateAccount",
+      "Special:Search",
+      "Special:BlankPage",
+      "Main_Page",
+      "-"
+    ]
   end
 
   defp pageview_update({page, views}, acc) do
