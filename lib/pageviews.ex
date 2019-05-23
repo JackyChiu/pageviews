@@ -25,7 +25,7 @@ defmodule Pageviews do
     IO.inspect(Topviews.get_top(agent_pid), label: "TOP")
   end
 
-  def pageview_pair(line) do
+  defp pageview_pair(line) do
     with page when not is_nil(page) <- Enum.at(line, 1),
          views_str when not is_nil(views_str) <- Enum.at(line, 2),
          {views, _} <- Integer.parse(views_str) do
@@ -35,7 +35,7 @@ defmodule Pageviews do
     end
   end
 
-  def pageview_update({page, views}, acc) do
+  defp pageview_update({page, views}, acc) do
     Map.update(acc, page, views, &(&1 + views))
   end
 end
