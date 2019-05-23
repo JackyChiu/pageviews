@@ -1,8 +1,9 @@
 defmodule Pageviews do
+  require Logger
   alias Pageviews.Topviews
 
   def run do
-    IO.puts("Starting run...")
+    Logger.info("Starting run...")
 
     empty_space = :binary.compile_pattern(" ")
     {:ok, agent_pid} = Topviews.start(25)

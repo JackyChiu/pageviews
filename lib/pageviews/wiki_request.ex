@@ -1,11 +1,13 @@
 defmodule Pageviews.WikiRequest do
+  require Logger
+
   @base_url "https://dumps.wikimedia.org/other/pageviews"
 
   # Streams the chunks of data recieved from the request to the provided pid.
   def get(pid, date, hour) do
     {year, month, day} = pad_date_fields(date)
     hour = pad_hour(hour)
-    IO.puts("getting file for date: #{date} hour: #{hour}")
+    Logger.info("Requesting data for #{date} at #{hour}h")
     path = file_path(year, month, day, hour)
     HTTPoison.get!(@base_url <> path, [], stream_to: pid)
   end

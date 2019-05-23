@@ -1,5 +1,6 @@
 defmodule Pageviews.Wiki do
   use GenStage
+  require Logger
   alias Pageviews.WikiRequest
 
   def start_link(_) do
@@ -32,7 +33,7 @@ defmodule Pageviews.Wiki do
 
   # Handles the end of the HTTP request's stream.
   def handle_info(%HTTPoison.AsyncEnd{}, {zstream, lines, remaining_demand, _done}) do
-    IO.puts("HTTP REQUEST DONE STREAMING")
+    Logger.info("HTTP request done streaming")
     :zlib.inflateEnd(zstream)
     :zlib.close(zstream)
 
