@@ -1,21 +1,24 @@
-# Pageviews
+# `pageviews`
 
-**TODO: Add description**
+An experimental project to compute the top 25 viewed Wikipedia pages in a given hour
+using Elixir and it's [GenStage](https://github.com/elixir-lang/gen_stage) and [Flow](https://github.com/plataformatec/flow/) library.
 
-## Installation
+## Components
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `pageviews` to your list of dependencies in `mix.exs`:
+### `Pageviews.Wiki`
+Streams the data from Wikipedia to itself and acts as a GenStage producer with back pressure.
 
-```elixir
-def deps do
-  [
-    {:pageviews, "~> 0.1.0"}
-  ]
-end
+### `Pageviews`
+Consumes and processes data from `Pageviews.Wiki` with Flow.
+
+### `Pageviews.Topviews`
+Agent used to store the top 25 pageviews pages seen.
+
+## Run
+
+```bash
+# clone project
+
+mix deps.get
+mix run
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/pageviews](https://hexdocs.pm/pageviews).
-
